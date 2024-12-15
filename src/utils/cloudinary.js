@@ -1,7 +1,9 @@
-import {v2 as cloudinary} from 'cloudinary'
+import dotenv from 'dotenv'
+dotenv.config()
+import { v2 as cloudinary } from 'cloudinary'
 import fs from 'fs'
 
-cloudinary.config({ 
+cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
@@ -18,15 +20,12 @@ const uploadOnCloudinary = async (loacalFilePath) => {
         })
 
         // remove the locally saved temporary file
-        // fs.unlink(loacalFilePath, (err) => {
-        //     if (err) throw err;
-        //     console.log(`${loacalFilePath} deleted from server`);
-        // })
-
-        console.log("File has been uploaded successfully", response.url)
+        fs.unlinkSync(loacalFilePath)
+        
         return response
     } catch (error) {
-        fs.unlinkSync(loacalFilePath) // remove the locally saved temporary file as upload got failed
+        // remove the locally saved temporary file as upload got failed
+        fs.unlinkSync(loacalFilePath)
 
         console.error("File upload Failed : ",error)
         return null;
