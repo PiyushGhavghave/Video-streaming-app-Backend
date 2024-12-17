@@ -136,7 +136,7 @@ const loginUser = asyncHandler( async (req, res) => {
         new apiResponse(
             200,
             {
-                user : loggedInUser, accessToken
+                user : loggedInUser, accessToken, refreshToken
             },
             "User logged in successfully"
         )
