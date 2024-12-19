@@ -2,7 +2,7 @@ import {User} from '../models/users.models.js'
 import {asyncHandler} from '../utils/asyncHandler.js'
 import {apiError} from '../utils/apiError.js'
 import {apiResponse} from '../utils/apiResponse.js'
-import {uploadOnCloudinary} from '../utils/cloudinary.js'
+import {uploadOnCloudinary,deleteFromCloudinary} from '../utils/cloudinary.js'
 
 import jwt from "jsonwebtoken"
 import fs from 'fs'
@@ -274,22 +274,17 @@ const updateUserAvatar = asyncHandler( async (req, res) => {
         throw new apiError(400, "Avatar file is required")
     }
 
+    const user = await User.findById(req.user?._id).select("-password -refreshToken")
+
+    await deleteFromCloudinary(user?.avatar)
+
     const avatar = await uploadOnCloudinary(avatarLocalPath)
     if(!avatar.url){
         throw new apiError(400, "Something went wrong while uploading avatar")
     }
 
-    const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-            $set : {
-                avatar : avatar.url
-            }
-        },
-        {
-            new : true
-        }
-    ).select("-password -refreshToken")
+    user.avatar = avatar.url
+    await user.save({validateBeforeSave : false})
 
     return res.status(200)
     .json(
@@ -302,22 +297,17 @@ const updateUserCoverImage = asyncHandler( async (req, res) => {
         throw new apiError(400, "Cover image file is required")
     }
 
+    const user = await User.findById(req.user?._id).select("-password -refreshToken")
+
+    await deleteFromCloudinary(user?.coverimage)
+
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
     if(!coverImage.url){
         throw new apiError(400, "Something went wrong while uploading cover image")
     }
 
-    const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-            $set : {
-                coverimage : coverImage.url
-            }
-        },
-        {
-            new : true
-        }
-    ).select("-password -refreshToken")
+    user.coverimage = coverImage.url
+    await user.save({validateBeforeSave : false})
 
     return res.status(200)
     .json(
