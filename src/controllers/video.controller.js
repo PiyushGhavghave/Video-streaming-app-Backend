@@ -2,10 +2,65 @@ import { Video } from "../models/video.models.js";
 import {asyncHandler} from '../utils/asyncHandler.js'
 import {apiError} from '../utils/apiError.js'
 import {apiResponse} from '../utils/apiResponse.js'
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 import fs from 'fs'
 import mongoose from "mongoose";
+const unlinkVideo = (videoLocalPath, thumbnailLocalPath) => {
+    if(videoLocalPath){
+        fs.unlinkSync(videoLocalPath)
+    }
+    if(thumbnailLocalPath){
+        fs.unlinkSync(thumbnailLocalPath)
+    }
+}
+const getVideobyId = asyncHandler(async (req, res) => {
+    const {videoId} = req.params
+
+    const video = await Video.aggregate([
+        {
+            $match : {
+                _id : new mongoose.Types.ObjectId(videoId),
+                isPublished : true,
+            }
+        },
+        {
+            $lookup : {
+                from : "users",
+                localField : "owner",
+                foreignField : "_id",
+                as : "owner",
+                pipeline : [
+                    {
+                        $project : {
+                            username : 1,
+                            fullname : 1,
+                            avatar : 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields : {
+                owner : {
+                    $first : "$owner"
+                }
+            }
+        }
+    ])
+
+    if(!video?.length){
+        throw new apiError(404, "Video doesn't exist or it is private")
+    }
+
+    res.status(200)
+    .json(
+        new apiResponse(200, video[0], "video fetched successfully")
+    )
+})
+
+
 
 const getAllVideos = asyncHandler( async (req, res) => {
     const {page =1 , limit = 10, query, sortBy = 'createdAt', sortType = -1} = req.query;
@@ -67,15 +122,6 @@ const getAllVideos = asyncHandler( async (req, res) => {
     )
 })
 
-
-const unlinkVideo = (videoLocalPath, thumbnailLocalPath) => {
-    if(videoLocalPath){
-        fs.unlinkSync(videoLocalPath)
-    }
-    if(thumbnailLocalPath){
-        fs.unlinkSync(thumbnailLocalPath)
-    }
-}
 const publishVideo = asyncHandler(async (req, res) => {
     const {title, description, isPublished = true} = req.body
 
@@ -119,54 +165,51 @@ const publishVideo = asyncHandler(async (req, res) => {
     )
 })
 
-const getVideobyId = asyncHandler(async (req, res) => {
-    const {videoId} = req.params
-
-    const video = await Video.aggregate([
-        {
-            $match : {
-                _id : new mongoose.Types.ObjectId(videoId)
-            }
-        },
-        {
-            $lookup : {
-                from : "users",
-                localField : "owner",
-                foreignField : "_id",
-                as : "owner",
-                pipeline : [
-                    {
-                        $project : {
-                            username : 1,
-                            fullname : 1,
-                            avatar : 1
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            $addFields : {
-                owner : {
-                    $first : "$owner"
-                }
-            }
-        }
-    ])
-
-    if(!video?.length){
-        throw new apiError(404, "Video not found")
+const updateVideo = asyncHandler(async (req, res) => {
+    const {title, description, videoId} = req.body
+    const thumbnailLocalPath = req.file?.path
+    if(!(title && description && videoId)){
+        unlinkVideo(_ , thumbnailLocalPath)
+        throw new apiError(400, "Title, description and video_id are required")
     }
 
-    res.status(200)
+    const video = await Video.findOne({
+        _id : videoId,
+        owner : req.user._id,
+    })
+    if(!video){
+        unlinkVideo(_, thumbnailLocalPath)
+        throw new apiError(400, "Unauthorized access")
+    }
+
+    let thumbnail;
+    if(thumbnailLocalPath){
+        await deleteFromCloudinary(video.thumbnail)
+
+        thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+        if(!thumbnail.url){
+            throw new apiError(500, "Something went wrong while uploading thumbnail")
+        }
+    }
+
+    if(thumbnail){
+        video.thumbnail = thumbnail.url
+    }
+    video.title = title
+    video.description = description
+    await video.save({validateBeforeSave : false})
+
+    return res.status(200)
     .json(
-        new apiResponse(200, video[0], "video fetched successfully")
+        new apiResponse(200, video, "Video details updated successfully")
     )
+
+
 })
 
-
 export {
+    getVideobyId,
     getAllVideos,
     publishVideo,
-    getVideobyId
+    updateVideo
 }

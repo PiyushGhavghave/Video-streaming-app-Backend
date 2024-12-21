@@ -2,7 +2,8 @@ import {Router} from "express"
 import { 
     getAllVideos,
     publishVideo,
-    getVideobyId
+    getVideobyId,
+    updateVideo
 } from "../controllers/video.controller.js"
 import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js"
@@ -23,6 +24,7 @@ videoRouter.route("/")
             }
         ]),
         publishVideo)
+    .patch(verifyJWT, upload.single("thumbnail"), updateVideo)
 
 videoRouter.route("/:videoId")
     .get(getVideobyId)
