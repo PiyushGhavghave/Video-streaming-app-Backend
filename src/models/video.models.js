@@ -35,5 +35,6 @@ const videoSchema = new Schema({
     }
 }, {timestamps :true})
 
+videoSchema.index({title : "text", description : "text"})
 
 export const Video = mongoose.model("Video", videoSchema)
