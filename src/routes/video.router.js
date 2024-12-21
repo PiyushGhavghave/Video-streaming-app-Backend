@@ -4,7 +4,8 @@ import {
     publishVideo,
     getVideobyId,
     updateVideo,
-    deleteVideo
+    deleteVideo,
+    toggleIsPublished
 } from "../controllers/video.controller.js"
 import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js"
@@ -31,5 +32,7 @@ videoRouter.route("/")
 videoRouter.route("/:videoId")
     .get(getVideobyId)
 
+videoRouter.route("/toggle-publish")
+    .patch(verifyJWT, toggleIsPublished)
 
 export default videoRouter
