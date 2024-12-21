@@ -3,7 +3,8 @@ import {
     getAllVideos,
     publishVideo,
     getVideobyId,
-    updateVideo
+    updateVideo,
+    deleteVideo
 } from "../controllers/video.controller.js"
 import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js"
@@ -25,6 +26,7 @@ videoRouter.route("/")
         ]),
         publishVideo)
     .patch(verifyJWT, upload.single("thumbnail"), updateVideo)
+    .delete(verifyJWT, deleteVideo)
 
 videoRouter.route("/:videoId")
     .get(getVideobyId)

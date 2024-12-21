@@ -204,6 +204,28 @@ const updateVideo = asyncHandler(async (req, res) => {
         new apiResponse(200, video, "Video details updated successfully")
     )
 
+})
+
+const deleteVideo = asyncHandler(async (req, res) => {
+    const {videoId} = req.body
+    if(!videoId){
+        throw new apiError(400, "VideoId is required")
+    }
+
+    const video = await Video.findOneAndDelete(
+        {
+            _id : videoId,
+            owner : req.user._id,
+        }
+    )
+    if(!video){
+        throw new apiError(400,"Unauthorized access")
+    }
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, video, "Video deleted successfully")
+    )
 
 })
 
@@ -211,5 +233,6 @@ export {
     getVideobyId,
     getAllVideos,
     publishVideo,
-    updateVideo
+    updateVideo,
+    deleteVideo
 }
