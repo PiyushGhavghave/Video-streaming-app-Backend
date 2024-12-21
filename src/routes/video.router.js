@@ -1,7 +1,8 @@
 import {Router} from "express"
 import { 
     getAllVideos,
-    publishVideo
+    publishVideo,
+    getVideobyId
 } from "../controllers/video.controller.js"
 import { upload } from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js"
@@ -23,7 +24,8 @@ videoRouter.route("/")
         ]),
         publishVideo)
 
-
+videoRouter.route("/:videoId")
+    .get(getVideobyId)
 
 
 export default videoRouter

@@ -5,6 +5,7 @@ import {apiResponse} from '../utils/apiResponse.js'
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 import fs from 'fs'
+import mongoose from "mongoose";
 
 const getAllVideos = asyncHandler( async (req, res) => {
     const {page =1 , limit = 10, query, sortBy = 'createdAt', sortType = -1} = req.query;
@@ -42,14 +43,11 @@ const getAllVideos = asyncHandler( async (req, res) => {
             $addFields : {
                 owner : {
                     $first : "$owner"
-                },
-                score : {
-                    $meta: "textScore"
                 }
             }
         },
         {
-            $sort : query? {score : -1} : {[sortBy] : Number(sortType)}
+            $sort : query? { score: { $meta: "textScore" } } : {[sortBy] : Number(sortType)}
         },
         {
             $skip : skip
@@ -65,7 +63,7 @@ const getAllVideos = asyncHandler( async (req, res) => {
     }
     return res.status(200)
     .json(
-        new apiResponse(200, videos, "Videos fetched successfully")
+        new apiResponse(200, videos, "All Videos fetched successfully")
     )
 })
 
@@ -121,8 +119,54 @@ const publishVideo = asyncHandler(async (req, res) => {
     )
 })
 
+const getVideobyId = asyncHandler(async (req, res) => {
+    const {videoId} = req.params
+
+    const video = await Video.aggregate([
+        {
+            $match : {
+                _id : new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup : {
+                from : "users",
+                localField : "owner",
+                foreignField : "_id",
+                as : "owner",
+                pipeline : [
+                    {
+                        $project : {
+                            username : 1,
+                            fullname : 1,
+                            avatar : 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields : {
+                owner : {
+                    $first : "$owner"
+                }
+            }
+        }
+    ])
+
+    if(!video?.length){
+        throw new apiError(404, "Video not found")
+    }
+
+    res.status(200)
+    .json(
+        new apiResponse(200, video[0], "video fetched successfully")
+    )
+})
+
 
 export {
     getAllVideos,
     publishVideo,
+    getVideobyId
 }
