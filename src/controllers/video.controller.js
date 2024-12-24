@@ -207,7 +207,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
-    const {videoId} = req.body
+    const {videoId} = req.params
     if(!videoId){
         throw new apiError(400, "VideoId is required")
     }
@@ -230,7 +230,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
 })
 
 const toggleIsPublished = asyncHandler(async (req, res) => {
-    const {videoId} = req.body
+    const {videoId} = req.params
     if(!videoId) {
         throw new apiError(400, "VideoId is required")
     }

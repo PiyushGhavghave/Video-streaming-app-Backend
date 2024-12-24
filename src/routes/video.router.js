@@ -27,12 +27,12 @@ videoRouter.route("/")
         ]),
         publishVideo)
     .patch(verifyJWT, upload.single("thumbnail"), updateVideo)
-    .delete(verifyJWT, deleteVideo)
 
 videoRouter.route("/:videoId")
     .get(getVideobyId)
+    .delete(verifyJWT, deleteVideo)
 
-videoRouter.route("/toggle-publish")
+videoRouter.route("/toggle-publish/:videoId")
     .patch(verifyJWT, toggleIsPublished)
 
 export default videoRouter
