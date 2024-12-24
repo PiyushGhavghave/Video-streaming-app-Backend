@@ -1,8 +1,8 @@
+import mongoose from "mongoose";
 import { Subscription } from "../models/subscription.models.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-
 
 const toggleSubscription = asyncHandler( async (req, res) => {
     const {channelID} = req.params
@@ -32,6 +32,53 @@ const toggleSubscription = asyncHandler( async (req, res) => {
     )
 })
 
+const getChannelSubscriberList = asyncHandler(async (req, res) => {
+    const {channelID} = req.params
+
+    const subscriberList = await Subscription.aggregate([
+        {
+            $match : {
+                channel : new mongoose.Types.ObjectId(channelID)
+            }
+        },
+        {
+            $lookup : {
+                from : "users",
+                localField : "subscriber",
+                foreignField : "_id",
+                as : "subscribers",
+                pipeline : [
+                    {
+                        $project : {
+                            username : 1,
+                            fullname : 1,
+                            avatar : 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields : {
+                subscribers : {
+                    $first : "$subscribers"
+                }
+            }
+        },
+        {
+            $project : {
+                subscribers : 1
+            }
+        }
+    ])
+    
+    res.status(200)
+    .json(
+        new apiResponse(200, subscriberList, "Subscribers list fetched successfully")
+    )
+})
+
 export {
-    toggleSubscription
+    toggleSubscription,
+    getChannelSubscriberList
 }
