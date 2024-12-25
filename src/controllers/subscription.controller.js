@@ -35,6 +35,9 @@ const toggleSubscription = asyncHandler( async (req, res) => {
 //fetch the subscribers list of Channel
 const getChannelSubscriberList = asyncHandler(async (req, res) => {
     const {channelID} = req.params
+    if(!channelID){
+        throw new apiError(400, "Channel Id is required")
+    }
 
     const subscriberList = await Subscription.aggregate([
         {
@@ -82,6 +85,9 @@ const getChannelSubscriberList = asyncHandler(async (req, res) => {
 //fetch the Channel list to which the user subscribed
 const getUserSubscribedToList = asyncHandler(async (req, res) => {
     const {UserID} = req.params
+    if(!UserID){
+        throw new apiError(400, "User Id is required")
+    }
 
     const subscribedToList = await Subscription.aggregate([
         {
