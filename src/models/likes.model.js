@@ -8,11 +8,9 @@ const likesSchema = new Schema({
     likedBy : {
         type : Schema.Types.ObjectId,
         ref : "User"
-    },
-    isLike : {
-        type : Boolean,
-        default : true
     }
 }, {timestamps : true})
+
+likesSchema.index({video : 1, likedBy : 1}, {unique : true})
 
 export const Like = mongoose.model("Like", likesSchema)
