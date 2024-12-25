@@ -16,6 +16,21 @@ const unlinkVideo = (videoLocalPath, thumbnailLocalPath) => {
 }
 const getVideobyId = asyncHandler(async (req, res) => {
     const {videoId} = req.params
+    if(!videoId){
+        throw new apiError(400, "Video Id is required")
+    }
+
+    await Video.findOneAndUpdate(
+        {
+            _id : videoId,
+            isPublished : true,
+        },
+        {
+            $inc : {
+                views : 1
+            }
+        }
+    )
 
     const video = await Video.aggregate([
         {
