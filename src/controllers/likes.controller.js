@@ -32,6 +32,56 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     )
 })
 
+const getLikedByUserList = asyncHandler(async (req, res) => {
+    const {videoId} = req.params
+    if(!videoId) {
+        throw new apiError(400, "Video Id is required")
+    }
+
+    const LikedByUserList = await Like.aggregate([
+        {
+            $match : {
+                video : new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup : {
+                from : "users",
+                localField : "likedBy",
+                foreignField : "_id",
+                as : "likedBy",
+                pipeline : [
+                    {
+                        $project : {
+                            username : 1,
+                            fullname : 1,
+                            avatar : 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields : {
+                likedBy : {
+                    $first : "$likedBy"
+                }
+            }
+        },
+        {
+            $project : {
+                likedBy : 1
+            }
+        }
+    ])
+
+    res.status(200)
+    .json(
+        new apiResponse(200, LikedByUserList, "Likedby user list fetched successfully")
+    )
+})
+
 export {
     toggleVideoLike,
+    getLikedByUserList
 }
