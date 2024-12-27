@@ -29,7 +29,7 @@ videoRouter.route("/")
     .patch(verifyJWT, upload.single("thumbnail"), updateVideo)
 
 videoRouter.route("/:videoId")
-    .get(getVideobyId)
+    .get(verifyJWT, getVideobyId)
     .delete(verifyJWT, deleteVideo)
 
 videoRouter.route("/toggle-publish/:videoId")

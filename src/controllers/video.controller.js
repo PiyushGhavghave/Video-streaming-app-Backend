@@ -57,10 +57,35 @@ const getVideobyId = asyncHandler(async (req, res) => {
             }
         },
         {
+            $lookup : {
+                from : "likes",
+                localField : "_id",
+                foreignField : "video",
+                as : "likes"
+            }
+        },
+        {
             $addFields : {
                 owner : {
                     $first : "$owner"
+                },
+                likeData : {
+                    totalLikes : {
+                        $size : "$likes"
+                    },
+                    isLiked : {
+                        $cond : {
+                            if : {$in : [req.user._id , "$likes.likedBy"]},
+                            then : true,
+                            else : false
+                        }
+                    }
                 }
+            }
+        },
+        {
+            $project : {
+                likes : 0
             }
         }
     ])
@@ -184,7 +209,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     const {title, description, videoId} = req.body
     const thumbnailLocalPath = req.file?.path
     if(!(title && description && videoId)){
-        unlinkVideo(_ , thumbnailLocalPath)
+        unlinkVideo(null , thumbnailLocalPath)
         throw new apiError(400, "Title, description and video_id are required")
     }
 
@@ -193,7 +218,7 @@ const updateVideo = asyncHandler(async (req, res) => {
         owner : req.user._id,
     })
     if(!video){
-        unlinkVideo(_, thumbnailLocalPath)
+        unlinkVideo(null , thumbnailLocalPath)
         throw new apiError(400, "Unauthorized access")
     }
 
