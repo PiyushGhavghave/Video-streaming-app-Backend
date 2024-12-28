@@ -36,7 +36,7 @@ const updateComment = asyncHandler(async (req, res) => {
         throw new apiError(400, "Content can't be empty")
     }
 
-    const updatedComment = await Comment.findByIdAndUpdate(
+    const updatedComment = await Comment.findOneAndUpdate(
         {
             _id : commentID,
             owner : req.user?._id
