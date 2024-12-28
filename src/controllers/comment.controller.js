@@ -9,7 +9,7 @@ const postComment = asyncHandler(async (req, res) => {
         throw new apiError(400, "Video Id is required")
     }
     if(!content.trim()){
-        throw new apiError(400, "Content cant be empty")
+        throw new apiError(400, "Content can't be empty")
     }
 
     const comment = await Comment.create({
@@ -27,6 +27,40 @@ const postComment = asyncHandler(async (req, res) => {
     )
 })
 
+const updateComment = asyncHandler(async (req, res) => {
+    const {content, commentID} = req.body
+    if(!commentID){
+        throw new apiError(400, "Comment id is required")
+    }
+    if(!content.trim()){
+        throw new apiError(400, "Content can't be empty")
+    }
+
+    const updatedComment = await Comment.findByIdAndUpdate(
+        {
+            _id : commentID,
+            owner : req.user?._id
+        },
+        {
+            $set : {
+                content : content
+            }
+        },
+        {
+            new : true
+        }
+    )
+    if(!updatedComment){
+        throw new apiError(400, "unauthorized access")
+    }
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, updatedComment, "Comment updated successfully")
+    )
+})
+
 export {
-    postComment
+    postComment,
+    updateComment,
 }
