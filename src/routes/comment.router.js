@@ -2,6 +2,7 @@ import { Router } from "express";
 import { 
     postComment,
     updateComment,
+    deleteComment
 } from "../controllers/comment.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -12,6 +13,7 @@ commentRouter.route("/")
     .post(postComment)
     .patch(updateComment)
 
-
+commentRouter.route("/:commentID")
+    .delete(deleteComment)
 
 export default commentRouter

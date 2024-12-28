@@ -60,7 +60,29 @@ const updateComment = asyncHandler(async (req, res) => {
     )
 })
 
+const deleteComment = asyncHandler(async (req, res) => {
+    const {commentID} = req.params
+    if(!commentID){
+        throw new apiError(400, "comment id is required")
+    }
+
+    const deletedComment = await Comment.findOneAndDelete(
+        {
+            _id : commentID,
+            owner : req.user?._id
+        }
+    )
+    if(!deletedComment){
+        throw new apiError(400, "Unauthorized access")
+    }
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, {}, "Comment deleted successfully")
+    )
+})
 export {
     postComment,
     updateComment,
+    deleteComment,
 }
