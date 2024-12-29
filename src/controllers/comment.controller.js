@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
@@ -81,8 +82,73 @@ const deleteComment = asyncHandler(async (req, res) => {
         new apiResponse(200, {}, "Comment deleted successfully")
     )
 })
+
+const getVideoComment = asyncHandler(async (req, res) => {
+    const {videoID} = req.params
+    const {page = 1, limit = 10, sortType = -1} = req.query
+    const skip = (page - 1) * limit
+    if(!videoID){
+        throw new apiError(400, "Videoid is required")
+    }
+
+    const comments = await Comment.aggregate([
+        {
+            $match : {
+                video : new mongoose.Types.ObjectId(videoID)
+            }
+        },
+        {
+            $lookup : {
+                from : "users",
+                localField : "owner",
+                foreignField : "_id",
+                as : "owner",
+                pipeline : [
+                    {
+                        $project : {
+                            username : 1,
+                            fullname : 1,
+                            avatar : 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields : {
+                owner : {
+                    $first : "$owner"
+                }
+            }
+        },
+        {
+            $project : {
+                content : 1,
+                owner : 1,
+                createdAt : 1
+            }
+        },
+        {
+            $sort : {    
+                createdAt : Number(sortType)
+            }
+        },
+        {
+            $skip : skip
+        },
+        {
+            $limit : Number(limit)
+        }
+    ])
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, comments, "Video comments fetched successfully")
+    )
+})
 export {
     postComment,
     updateComment,
     deleteComment,
+    getVideoComment,
 }

@@ -2,7 +2,8 @@ import { Router } from "express";
 import { 
     postComment,
     updateComment,
-    deleteComment
+    deleteComment,
+    getVideoComment
 } from "../controllers/comment.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -15,5 +16,8 @@ commentRouter.route("/")
 
 commentRouter.route("/:commentID")
     .delete(deleteComment)
+
+commentRouter.route("/:videoID")
+    .get(getVideoComment)
 
 export default commentRouter
