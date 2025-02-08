@@ -27,6 +27,40 @@ const createPlaylist = asyncHandler(async (req, res) => {
 
 })
 
+const addVideoToPlaylist = asyncHandler(async (req, res) => {
+    const {playlistID} = req.params;
+    const {videoID} = req.body;
+    if(!playlistID){
+        throw new apiError(400, "Playlist ID is required");
+    }
+    if(!videoID){
+        throw new apiError(400, "video ID is required");
+    }
+
+    const updatedPlaylist = await Playlist.findOneAndUpdate(
+        {
+            _id : playlistID,
+            owner : req.user?._id
+        },
+        {
+            $push : {videos : videoID}
+        },
+        {
+            new : true
+        }
+    )
+    if(!updatedPlaylist){
+        throw new apiError(400, "Something went wrong while adding video into playlist")
+    }
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, updatedPlaylist, "video added successfully")
+    )
+
+})
+
 export {
-    createPlaylist
+    createPlaylist,
+    addVideoToPlaylist
 }
