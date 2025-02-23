@@ -219,7 +219,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     })
     if(!video){
         unlinkVideo(null , thumbnailLocalPath)
-        throw new apiError(400, "Unauthorized access")
+        throw new apiError(401, "Unauthorized access")
     }
 
     let thumbnail;
@@ -259,7 +259,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
         }
     )
     if(!video){
-        throw new apiError(400,"Unauthorized access")
+        throw new apiError(401,"Unauthorized access")
     }
 
     return res.status(200)
@@ -292,7 +292,7 @@ const toggleIsPublished = asyncHandler(async (req, res) => {
         }
     )
     if(!video){
-        throw new apiError(400,"Unauthorized access")
+        throw new apiError(401,"Unauthorized access")
     }
 
     return res.status(200)
