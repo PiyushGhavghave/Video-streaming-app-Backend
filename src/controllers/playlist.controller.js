@@ -50,7 +50,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
         },
         {new : true}
     )
-    if(!updatePlaylist){
+    if(!updatedPlaylist){
         throw new apiError(500, "Something went wrong while updating playlist")
     }
 
