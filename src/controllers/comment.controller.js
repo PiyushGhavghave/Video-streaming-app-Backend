@@ -19,7 +19,7 @@ const postComment = asyncHandler(async (req, res) => {
         owner : req.user?._id
     })
     if(!comment){
-        throw new apiError(400, "something went wrong while posting comment")
+        throw new apiError(500, "something went wrong while posting comment")
     }
 
     return res.status(200)
@@ -52,7 +52,7 @@ const updateComment = asyncHandler(async (req, res) => {
         }
     )
     if(!updatedComment){
-        throw new apiError(400, "unauthorized access")
+        throw new apiError(401, "unauthorized access")
     }
 
     return res.status(200)
@@ -74,7 +74,7 @@ const deleteComment = asyncHandler(async (req, res) => {
         }
     )
     if(!deletedComment){
-        throw new apiError(400, "Unauthorized access")
+        throw new apiError(401, "Unauthorized access")
     }
 
     return res.status(200)
