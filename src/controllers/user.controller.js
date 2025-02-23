@@ -56,7 +56,7 @@ const registerUser = asyncHandler( async (req, res) => {
         if(coverImageLocalPath){
             fs.unlinkSync(coverImageLocalPath)
         }
-        throw new apiError(400, "User already exist")
+        throw new apiError(409, "User already exist")
     }
 
     // upload image to cloudinary, check if avatar is uploaded
@@ -88,7 +88,7 @@ const registerUser = asyncHandler( async (req, res) => {
 
     // return response
     res.status(200).json(
-        new apiResponse(200, createdUser, "User created successfully!")
+        new apiResponse(201, createdUser, "User created successfully!")
     )
 })
 
@@ -116,7 +116,7 @@ const loginUser = asyncHandler( async (req, res) => {
 
     const isValidPassword = await user.validatePassword(password);
     if(!isValidPassword){
-        throw new apiError(400, "User credentials are invalid")
+        throw new apiError(401, "User credentials are invalid")
     }
 
     const accessToken = user.generateAccessToken();
@@ -173,21 +173,21 @@ const logoutUser = asyncHandler( async (req, res) => {
 const refreshAccessToken = asyncHandler( async (req, res) => {
     const receivedRefreshToken = req.cookies?.refreshToken || req.body.refreshToken
     if(!receivedRefreshToken){
-        throw new apiError(400, "Unauthorized access")
+        throw new apiError(401, "Unauthorized access")
     }
 
     const decodedToken = jwt.verify(receivedRefreshToken, process.env.REFRESH_TOKEN_SECRET)
     if(!decodedToken){
-        throw new apiError(400, "Invalid refresh Token")
+        throw new apiError(401, "Invalid refresh Token")
     }
 
     const user = await User.findById(decodedToken?._id)
     if(!user){
-        throw new apiError(400, "Invalid refresh Token")
+        throw new apiError(401, "Invalid refresh Token")
     }
 
     if(receivedRefreshToken !== user.refreshToken){
-        throw new apiError(400, "refresh token is either expired or used")
+        throw new apiError(403, "refresh token is either expired or used")
     }
 
     const accessToken = user.generateAccessToken() ;
@@ -280,7 +280,7 @@ const updateUserAvatar = asyncHandler( async (req, res) => {
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
     if(!avatar.url){
-        throw new apiError(400, "Something went wrong while uploading avatar")
+        throw new apiError(500, "Something went wrong while uploading avatar")
     }
 
     user.avatar = avatar.url
@@ -303,7 +303,7 @@ const updateUserCoverImage = asyncHandler( async (req, res) => {
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
     if(!coverImage.url){
-        throw new apiError(400, "Something went wrong while uploading cover image")
+        throw new apiError(500, "Something went wrong while uploading cover image")
     }
 
     user.coverimage = coverImage.url
