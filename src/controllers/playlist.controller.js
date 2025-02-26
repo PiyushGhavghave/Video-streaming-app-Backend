@@ -33,7 +33,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     if(!playlistID){
         throw new apiError(400, "Playlist ID is required");
     }
-    if(!name){
+    if(!name || !name.trim()){
         throw new apiError(400, "Playlist name is required");
     }
 
@@ -59,6 +59,28 @@ const updatePlaylist = asyncHandler(async (req, res) => {
         new apiResponse(200, updatedPlaylist, "Playlist updated successfully")
     )
     
+})
+
+const deletePlaylist = asyncHandler(async (req, res) => {
+    const {playlistID} = req.params;
+    if(!playlistID){
+        throw new apiError(400, "Playlist ID is required")
+    }
+
+    const deletedPlaylist = await Playlist.findOneAndDelete(
+        {
+            _id : playlistID,
+            owner : req.user?._id,
+        }
+    )
+    if(!deletedPlaylist){
+        throw new apiError(500, "Something went wrong while deleting playlist")
+    }
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, {}, "Playlist deleted successfully")
+    )
 })
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
@@ -97,5 +119,6 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 export {
     createPlaylist,
     updatePlaylist,
+    deletePlaylist,
     addVideoToPlaylist,
 }

@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { 
     createPlaylist,
+    updatePlaylist,
+    deletePlaylist,
     addVideoToPlaylist,
-    updatePlaylist
 } from "../controllers/playlist.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -15,6 +16,7 @@ playlistRouter.route("/")
 
 playlistRouter.route("/:playlistID")
     .patch(updatePlaylist)
+    .delete(deletePlaylist)
 
 playlistRouter.route("/:playlistID/videos")
     .post(addVideoToPlaylist)
