@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Playlist } from "../models/playlist.model.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
@@ -12,7 +13,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
     
     const playlist = await Playlist.create({
         name : name,
-        description : description,
+        description : description || '',
         videos : videoID || [],
         owner : req.user?._id,
     })
@@ -83,6 +84,93 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     )
 })
 
+const getPlaylist = asyncHandler(async (req, res) => {
+    const {playlistID} = req.params;
+    if(!playlistID){
+        throw new apiError(400, "Playlist Id is required");
+    }
+
+    const playlist = await Playlist.aggregate([
+        {
+            $match : {
+                _id : new mongoose.Types.ObjectId(playlistID)
+            }
+        },
+        {
+            $lookup : {
+                from : "videos",
+                localField : "videos",
+                foreignField : "_id",
+                as : "videos",
+                pipeline : [
+                    {
+                        $match : {
+                            isPublished : true
+                        }
+                    },
+                    {
+                        $lookup : {
+                            from : "users",
+                            localField : "owner",
+                            foreignField : "_id",
+                            as : "owner",
+                            pipeline : [
+                                {
+                                    $project : {
+                                        username : 1,
+                                        fullname : 1,
+                                        avatar : 1
+                                    }
+                                }
+                            ]
+                        }
+                    
+                    },
+                    {
+                        $addFields : {
+                            owner : {
+                                $first : "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup : {
+                from : "users",
+                localField : "owner",
+                foreignField : "_id",
+                as : "owner",
+                pipeline : [
+                    {
+                        $project : {
+                            username : 1,
+                            fullname : 1,
+                            avatar : 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields : {
+                owner : {
+                    $first : "$owner"
+                }
+            }
+        }
+    ])
+    if(!playlist?.length){
+        throw new apiError(404, "Playlist not found")
+    }
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, playlist[0], "Playlist fetched successfully")
+    )
+})
+
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const {playlistID} = req.params;
     const {videoID} = req.body;
@@ -120,5 +208,6 @@ export {
     createPlaylist,
     updatePlaylist,
     deletePlaylist,
+    getPlaylist,
     addVideoToPlaylist,
 }

@@ -3,6 +3,7 @@ import {
     createPlaylist,
     updatePlaylist,
     deletePlaylist,
+    getPlaylist,
     addVideoToPlaylist,
 } from "../controllers/playlist.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -17,6 +18,7 @@ playlistRouter.route("/")
 playlistRouter.route("/:playlistID")
     .patch(updatePlaylist)
     .delete(deletePlaylist)
+    .get(getPlaylist)
 
 playlistRouter.route("/:playlistID/videos")
     .post(addVideoToPlaylist)
