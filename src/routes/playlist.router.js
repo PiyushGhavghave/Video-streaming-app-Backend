@@ -5,6 +5,7 @@ import {
     deletePlaylist,
     getPlaylist,
     addVideoToPlaylist,
+    removeVideoFromPlaylist,
 } from "../controllers/playlist.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -22,6 +23,7 @@ playlistRouter.route("/:playlistID")
 
 playlistRouter.route("/:playlistID/videos")
     .post(addVideoToPlaylist)
+    .delete(removeVideoFromPlaylist)
 
 
 export default playlistRouter

@@ -181,6 +181,19 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         throw new apiError(400, "video ID is required");
     }
 
+    const playlist = await Playlist.findOne(
+        {
+            _id : playlistID,
+            owner : req.user?._id
+        }
+    )
+    if(!playlist){
+        throw new apiError(404, "Playlist not found")
+    }
+    if(playlist.videos.includes(videoID)){
+        throw new apiError(400, "Video already exists in the playlist")
+    }
+
     const updatedPlaylist = await Playlist.findOneAndUpdate(
         {
             _id : playlistID,
@@ -204,10 +217,57 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 
 })
 
+const removeVideoFromPlaylist = asyncHandler(async (req,res) => {
+    const {playlistID} = req.params;
+    const {videoID} = req.body;
+    if(!playlistID){
+        throw new apiError(400, "Playlist ID is required");
+    }
+    if(!videoID){
+        throw new apiError(400, "video ID is required");
+    }
+
+    const playlist = await Playlist.findOne(
+        {
+            _id : playlistID,
+            owner : req.user?._id
+        }
+    )
+    if(!playlist){
+        throw new apiError(404, "Playlist not found")
+    }
+    if(!playlist.videos.includes(videoID)){
+        throw new apiError(400, "Video does not exists in the playlist")
+    }
+
+    const updatedPlaylist = await Playlist.findOneAndUpdate(
+        {
+            _id : playlistID,
+            owner : req.user?._id
+        },
+        {
+            $pull : {videos : videoID}
+        },
+        {
+            new : true
+        }
+    )
+    if(!updatedPlaylist){
+        throw new apiError(500, "Something went wrong while removing video from playlist")
+    }
+
+    return res.status(200)
+    .json(
+        new apiResponse(200, updatedPlaylist, "video removed successfully")
+    )
+
+})
+
 export {
     createPlaylist,
     updatePlaylist,
     deletePlaylist,
     getPlaylist,
     addVideoToPlaylist,
+    removeVideoFromPlaylist,
 }
