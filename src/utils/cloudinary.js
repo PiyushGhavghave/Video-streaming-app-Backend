@@ -9,34 +9,44 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-//create function to upload file.... then unlink(delete) from server
-const uploadOnCloudinary = async (loacalFilePath) => {
+const uploadOnCloudinary = async (localFilePath) => {
     try {
-        if(!loacalFilePath) return null;
+        if(!localFilePath) return null;
+
+        const stats = fs.statSync(localFilePath);
+        const fileSizeInBytes = stats.size;
+        const maxSize = 100 * 1024 * 1024; // 100MB
+
+        if (fileSizeInBytes > maxSize) {
+            throw new Error("File is too large to upload. Limit is 100mb")
+        }
 
         //Upload file
-        const response = await cloudinary.uploader.upload(loacalFilePath, {
+        const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type : 'auto'
         })
 
         // remove the locally saved temporary file
-        fs.unlinkSync(loacalFilePath)
+        if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+        }
         
         return response
     } catch (error) {
         // remove the locally saved temporary file as upload got failed
-        fs.unlinkSync(loacalFilePath)
+        if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+        }
 
-        console.error("File upload Failed : ",error)
-        return null;
+        throw error;
     }
 }
 
-const deleteFromCloudinary = async (imageURL) => {
+const deleteFromCloudinary = async (fileURL) => {
     try {
-        if(!imageURL) return;
+        if(!fileURL) return;
 
-        const publicID = imageURL.split('/').slice(-1)[0].split('.')[0]
+        const publicID = fileURL.split('/').slice(-1)[0].split('.')[0]
 
         await cloudinary.uploader.destroy(publicID)
 

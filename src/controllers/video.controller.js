@@ -8,9 +8,11 @@ import fs from 'fs'
 import mongoose from "mongoose";
 const unlinkVideo = (videoLocalPath, thumbnailLocalPath) => {
     if(videoLocalPath){
+        if(fs.existsSync(videoLocalPath))
         fs.unlinkSync(videoLocalPath)
     }
     if(thumbnailLocalPath){
+        if(fs.existsSync(thumbnailLocalPath))
         fs.unlinkSync(thumbnailLocalPath)
     }
 }
@@ -183,8 +185,21 @@ const publishVideo = asyncHandler(async (req, res) => {
         throw new apiError(400, "title and description are required")
     }
 
-    const video = await uploadOnCloudinary(videoLocalPath)
-    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+    let video;
+    try {
+        video = await uploadOnCloudinary(videoLocalPath);
+    } catch (error) {
+        unlinkVideo(videoLocalPath, thumbnailLocalPath)
+        throw new apiError(400, error.message)
+    }
+    let thumbnail;
+    try {
+        thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+    } catch (error) {
+        unlinkVideo(videoLocalPath, thumbnailLocalPath)
+        throw new apiError(400, error.message)
+    }
+
     if(!(video && thumbnail)){
         throw new apiError(500, "Something went wrong while uploading video and thumbnail")
     }
@@ -198,6 +213,9 @@ const publishVideo = asyncHandler(async (req, res) => {
         isPublished : isPublished,
         owner : req.user._id,
     })
+    if(!newVideo){
+        throw new apiError(500, "Something went wrong while publishing video")
+    }
 
     res.status(200)
     .json(
@@ -226,7 +244,12 @@ const updateVideo = asyncHandler(async (req, res) => {
     if(thumbnailLocalPath){
         await deleteFromCloudinary(video.thumbnail)
 
-        thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+        try {
+            thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+        } catch (error) {
+            unlinkVideo(null, thumbnailLocalPath)
+            throw new apiError(400, error.message)
+        }
         if(!thumbnail.url){
             throw new apiError(500, "Something went wrong while uploading thumbnail")
         }
@@ -238,6 +261,9 @@ const updateVideo = asyncHandler(async (req, res) => {
     video.title = title
     video.description = description
     await video.save({validateBeforeSave : false})
+    .catch((err) => {
+        throw new apiError(500, "Something went wrong while updating video")
+    })
 
     return res.status(200)
     .json(
@@ -252,14 +278,22 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new apiError(400, "VideoId is required")
     }
 
-    const video = await Video.findOneAndDelete(
-        {
-            _id : videoId,
-            owner : req.user._id,
-        }
-    )
+    const video = await Video.findOne({
+        _id : videoId,
+        owner : req.user?._id
+    })
     if(!video){
-        throw new apiError(401,"Unauthorized access")
+        throw new apiError(400, "Video not found or you dont have access")
+    }
+
+    await deleteFromCloudinary(video.videoFile);
+
+    const deletedVideo = await Video.deleteOne({
+        _id : videoId,
+        owner : req.user?._id,
+    })
+    if(deletedVideo.deletedCount <= 0){
+        throw new apiError(500,"Something went wrong while deleting video")
     }
 
     return res.status(200)
