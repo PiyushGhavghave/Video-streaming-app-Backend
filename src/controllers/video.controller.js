@@ -1,4 +1,5 @@
 import { Video } from "../models/video.models.js";
+import { User } from "../models/users.models.js";
 import {asyncHandler} from '../utils/asyncHandler.js'
 import {apiError} from '../utils/apiError.js'
 import {apiResponse} from '../utils/apiResponse.js'
@@ -22,7 +23,8 @@ const getVideobyId = asyncHandler(async (req, res) => {
         throw new apiError(400, "Video Id is required")
     }
 
-    await Video.findOneAndUpdate(
+    //increment views
+    const viewedVideo = await Video.findOneAndUpdate(
         {
             _id : videoId,
             isPublished : true,
@@ -30,6 +32,22 @@ const getVideobyId = asyncHandler(async (req, res) => {
         {
             $inc : {
                 views : 1
+            }
+        },
+        {
+            new : true
+        }
+    )
+    if(!viewedVideo){
+        throw new apiError(400, "Video doesn't exist or it is private")
+    }
+    
+    //add video to watch history
+    await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $push : {
+                watchHistory : videoId
             }
         }
     )
