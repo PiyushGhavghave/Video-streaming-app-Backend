@@ -8,6 +8,17 @@ import jwt from "jsonwebtoken"
 import fs from 'fs'
 import mongoose from 'mongoose'
 
+const unlinkFile = (avatarPath, coverImagePath) => {
+    if(avatarPath){
+        if(fs.existsSync(avatarPath))
+        fs.unlinkSync(avatarPath)
+    }
+    if(coverImagePath){
+        if(fs.existsSync(coverImagePath))
+        fs.unlinkSync(coverImagePath)
+    }
+}
+
 // extract the details from frontend
 // extract image local path, check for avatar local path (else unlink files)
 // check for Validation - not empty (else unlink files)
@@ -32,18 +43,13 @@ const registerUser = asyncHandler( async (req, res) => {
         coverImageLocalPath = req.files.coverImage[0].path;
     }
     if(!avatarLocalPath){
-        if(coverImageLocalPath){
-            fs.unlinkSync(coverImageLocalPath)
-        }
+        unlinkFile(avatarLocalPath, coverImageLocalPath);
         throw new apiError(400, "Avatar is requierd")
     }
 
     // check for Validation - not empty (else unlink files)
     if([username, email, fullname, password].some((field) => field?.trim() === "")){
-        fs.unlinkSync(avatarLocalPath)
-        if(coverImageLocalPath){
-            fs.unlinkSync(coverImageLocalPath)
-        }
+        unlinkFile(avatarLocalPath, coverImageLocalPath);
         throw new apiError(400, "All fields are required");
     }
 
@@ -52,18 +58,28 @@ const registerUser = asyncHandler( async (req, res) => {
         $or : [{ username: username }, { email: email }]
     })
     if(userExist){
-        fs.unlinkSync(avatarLocalPath)
-        if(coverImageLocalPath){
-            fs.unlinkSync(coverImageLocalPath)
-        }
+        unlinkFile(avatarLocalPath, coverImageLocalPath);
         throw new apiError(409, "User already exist")
     }
 
     // upload image to cloudinary, check if avatar is uploaded
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
-    if(!avatar){
-        throw new apiError(400, "Avatar file is required... please try uploading again")
+    let avatar;
+    try {
+        avatar = await uploadOnCloudinary(avatarLocalPath)
+    } catch (error) {
+        unlinkFile(avatarLocalPath, coverImageLocalPath);
+        throw new apiError(400, error.message)
+    }
+    let coverImage;
+    try {
+        coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    } catch (error) {
+        unlinkFile(avatarLocalPath, coverImageLocalPath);
+        throw new apiError(400, error.message)
+    }
+
+    if(!avatar?.url){
+        throw new apiError(500, "Something went wrong while uploading avatar... try again")
     }
     
     // create user object 
@@ -278,7 +294,14 @@ const updateUserAvatar = asyncHandler( async (req, res) => {
 
     await deleteFromCloudinary(user?.avatar)
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    let avatar;
+    try {
+        avatar = await uploadOnCloudinary(avatarLocalPath)
+    } catch (error) {
+        unlinkFile(avatarLocalPath, null);
+        throw new apiError(400, error.message)
+    }
+    
     if(!avatar.url){
         throw new apiError(500, "Something went wrong while uploading avatar")
     }
@@ -301,7 +324,14 @@ const updateUserCoverImage = asyncHandler( async (req, res) => {
 
     await deleteFromCloudinary(user?.coverimage)
 
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    let coverImage;
+    try {
+        coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    } catch (error) {
+        unlinkFile(null, coverImageLocalPath);
+        throw new apiError(400, error.message)
+    }
+
     if(!coverImage.url){
         throw new apiError(500, "Something went wrong while uploading cover image")
     }
